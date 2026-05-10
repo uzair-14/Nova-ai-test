@@ -1,0 +1,41 @@
+# Pushes a small commit on a schedule so it can show on your GitHub contribution graph.
+# Commits use the author below (must stay verified on your GitHub account for green dots).
+# Manual run: Actions → "Daily activity ping" → Run workflow.
+
+name: Daily activity ping
+
+on:
+  schedule:
+    # 14:30 UTC daily — change if you prefer another time
+    - cron: "30 14 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: activity-ping
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Append timestamp
+        run: echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> .github/activity.log
+
+      - name: Commit and push
+        run: |
+          git config user.name "uzair-14"
+          git config user.email "uzairalikhannnn1996@gmail.com"
+          git add .github/activity.log
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: activity log $(date -u +%Y-%m-%d)"
+          git push
